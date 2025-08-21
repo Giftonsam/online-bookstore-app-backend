@@ -1,39 +1,35 @@
 // config/SecurityConfig.java
 package com.bookstore.backend.config;
 
-import com.bookstore.backend.service.UserService;
-import com.bookstore.backend.util.JwtAuthenticationEntryPoint;
 import com.bookstore.backend.util.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
+public class SecurityConfig {
 
 	@Autowired
-	private UserService userService;
-
-	@Autowired
-	private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
-
-	@Bean
-	public JwtAuthenticationFilter jwtAuthenticationFilter() {
-		return new JwtAuthenticationFilter();
-	}
+	@Lazy
+	private JwtAuthenticationFilter jwtAuthenticationFilter;
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {
@@ -41,42 +37,35 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	}
 
 	@Bean
-	@Override
-	public AuthenticationManager authenticationManagerBean() throws Exception {
-		return super.authenticationManagerBean();
+	public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+		return authConfig.getAuthenticationManager();
 	}
 
-	@Override
-	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-		auth.userDetailsService(userService).passwordEncoder(passwordEncoder());
+	@Bean
+	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+		http.cors().and().csrf().disable().sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+				.and().authorizeHttpRequests(authz -> authz.antMatchers("/auth/**").permitAll() // Changed from
+																								// /api/auth/**
+						.antMatchers("/books/**").permitAll() // Changed from /api/books/**
+						.antMatchers("/categories/**").permitAll() // Changed from /api/categories/**
+						.antMatchers("/admin/**").hasRole("ADMIN") // Changed from /api/admin/**
+						.anyRequest().authenticated());
+
+		http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+		return http.build();
 	}
 
-	@Override
-	protected void configure(HttpSecurity http) throws Exception {
-		http.cors().and().csrf().disable().exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint)
-				.and().sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
-				.authorizeRequests()
-				// Public endpoints
-				.antMatchers("/api/auth/**").permitAll().antMatchers(HttpMethod.GET, "/api/books/**").permitAll()
-				.antMatchers(HttpMethod.GET, "/api/categories/**").permitAll().antMatchers("/api/payments/webhook")
-				.permitAll().antMatchers("/uploads/**").permitAll()
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration configuration = new CorsConfiguration();
+		configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+		configuration.setAllowedHeaders(Arrays.asList("*"));
+		configuration.setAllowCredentials(true);
 
-				// Admin only endpoints
-				.antMatchers("/api/admin/**").hasRole("ADMIN").antMatchers(HttpMethod.POST, "/api/books")
-				.hasRole("ADMIN").antMatchers(HttpMethod.PUT, "/api/books/**").hasRole("ADMIN")
-				.antMatchers(HttpMethod.DELETE, "/api/books/**").hasRole("ADMIN")
-				.antMatchers(HttpMethod.POST, "/api/categories").hasRole("ADMIN")
-				.antMatchers(HttpMethod.PUT, "/api/categories/**").hasRole("ADMIN")
-				.antMatchers(HttpMethod.DELETE, "/api/categories/**").hasRole("ADMIN")
-
-				// User endpoints
-				.antMatchers("/api/cart/**").hasAnyRole("USER", "ADMIN").antMatchers("/api/wishlist/**")
-				.hasAnyRole("USER", "ADMIN").antMatchers("/api/orders/**").hasAnyRole("USER", "ADMIN")
-				.antMatchers("/api/payments/**").hasAnyRole("USER", "ADMIN").antMatchers("/api/users/profile")
-				.hasAnyRole("USER", "ADMIN")
-
-				.anyRequest().authenticated();
-
-		http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", configuration);
+		return source;
 	}
 }
