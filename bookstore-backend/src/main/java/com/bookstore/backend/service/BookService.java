@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -143,5 +144,17 @@ public class BookService {
 
 	public Long countLowStockBooks() {
 		return bookRepository.countLowStockBooks(10);
+	}
+
+	public Optional<Book> findById(Long id) {
+		return bookRepository.findById(id);
+	}
+
+	public Book save(Book book) {
+		return bookRepository.save(book);
+	}
+
+	public void deleteById(Long id) {
+		bookRepository.deleteById(id);
 	}
 }

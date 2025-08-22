@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -100,5 +101,9 @@ public class UserService implements UserDetailsService {
 
 	public Long countActiveUsers() {
 		return userRepository.countActiveUsersByRole(User.Role.USER);
+	}
+
+	public Optional<User> findById(Long id) {
+		return userRepository.findById(id);
 	}
 }

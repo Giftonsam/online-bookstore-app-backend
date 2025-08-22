@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -49,4 +50,20 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 	Long countLowStockBooks(@Param("threshold") Integer threshold);
 
 	List<Book> findTop10ByIsActiveTrueOrderByCreatedAtDesc();
+
+	// ============ BookRepository.java ============
+	// Add these methods to your existing BookRepository interface
+
+	@Query("SELECT DISTINCT b.category.name FROM Book b WHERE b.category.name IS NOT NULL ORDER BY b.category.name")
+	List<String> findDistinctCategories();
+
+	Page<Book> findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCase(String title, String author,
+			Pageable pageable);
+
+	Page<Book> findByTitleContainingIgnoreCaseOrAuthorContainingIgnoreCaseAndCategoryName(String title, String author,
+			String categoryName, Pageable pageable);
+
+	Page<Book> findByCategoryName(String categoryName, Pageable pageable);
+
+	List<Book> findByStockQuantity(Integer stockQuantity);
 }

@@ -44,4 +44,24 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 	Page<Order> findAllOrdersOrderByDateDesc(Pageable pageable);
 
 	List<Order> findTop10ByOrderByOrderDateDesc();
+
+	// Add these methods to your existing OrderRepository interface
+
+	Page<Order> findByOrderDateAfter(LocalDateTime startDate, Pageable pageable);
+
+	Page<Order> findByStatusAndOrderDateAfter(Order.OrderStatus status, LocalDateTime startDate, Pageable pageable);
+
+	Page<Order> findByUserFirstNameContainingIgnoreCaseOrUserLastNameContainingIgnoreCase(String firstName,
+			String lastName, Pageable pageable);
+
+	Page<Order> findByUserFirstNameContainingIgnoreCaseOrUserLastNameContainingIgnoreCaseAndOrderDateAfter(
+			String firstName, String lastName, LocalDateTime startDate, Pageable pageable);
+
+	Page<Order> findByStatusAndUserFirstNameContainingIgnoreCaseOrUserLastNameContainingIgnoreCase(
+			Order.OrderStatus status, String firstName, String lastName, Pageable pageable);
+
+	Page<Order> findByStatusAndUserFirstNameContainingIgnoreCaseOrUserLastNameContainingIgnoreCaseAndOrderDateAfter(
+			Order.OrderStatus status, String firstName, String lastName, LocalDateTime startDate, Pageable pageable);
+
+	List<Order> findByUserIdOrderByOrderDateDesc(Long userId);
 }
